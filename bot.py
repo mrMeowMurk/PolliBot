@@ -4,13 +4,13 @@ from datetime import datetime
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.exceptions import TelegramBadRequest
 
-from config import BOT_TOKEN, HELP_TEXT, ABOUT_TEXT
-from keyboards import get_main_keyboard, get_models_keyboard, get_cancel_keyboard, get_generation_type_keyboard
-from utils import fetch_all_models, generate_text, generate_image
+from config.config import BOT_TOKEN, HELP_TEXT, ABOUT_TEXT
+from src.keyboards.keyboards import get_main_keyboard, get_models_keyboard, get_cancel_keyboard, get_generation_type_keyboard
+from src.utils.pollinations import fetch_all_models, generate_text, generate_image
+from src.states.user import UserState
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -21,11 +21,7 @@ storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
 # Состояния FSM
-class UserState(StatesGroup):
-    waiting_for_prompt = State()
-    waiting_for_image_prompt = State()
-    waiting_for_text_prompt = State()
-    waiting_for_text_image = State()
+
 
 # Хранилище данных пользователей
 user_data = {}

@@ -2,7 +2,7 @@ import aiohttp
 import base64
 import mimetypes
 from urllib.parse import quote_plus
-from config import TEXT_MODELS_URL, IMAGE_MODELS_URL, TEXT_GENERATION_OPENAI_URL, IMAGE_GENERATION_BASE_URL
+from config.config import TEXT_MODELS_URL, IMAGE_MODELS_URL, TEXT_GENERATION_OPENAI_URL, IMAGE_GENERATION_BASE_URL
 import logging
 
 async def fetch_models(url: str) -> list:

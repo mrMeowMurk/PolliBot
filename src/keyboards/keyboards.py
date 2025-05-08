@@ -1,5 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from config import AVAILABLE_MODELS
+from config.config import AVAILABLE_MODELS
 
 def get_main_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
