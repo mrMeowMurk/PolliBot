@@ -1,4 +1,5 @@
 import sqlite3
+import os
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
 
@@ -11,9 +12,11 @@ class DatabaseManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, db_file: str = "bot_data.db"):
+    def __init__(self, db_file: str = "data/bot_data.db"):
         # Инициализируем только один раз
         if not DatabaseManager._initialized:
+            # Создаем директорию data, если она не существует
+            os.makedirs(os.path.dirname(db_file), exist_ok=True)
             self.db_file = db_file
             self._create_tables()
             DatabaseManager._initialized = True
@@ -130,7 +133,7 @@ class DatabaseManager:
         """, (user_id, model_type, str(models)))
 
     @classmethod
-    def get_instance(cls, db_file: str = "bot_data.db") -> 'DatabaseManager':
+    def get_instance(cls, db_file: str = "data/bot_data.db") -> 'DatabaseManager':
         """Получение единственного экземпляра класса DatabaseManager."""
         if cls._instance is None:
             cls._instance = DatabaseManager(db_file)
