@@ -105,12 +105,15 @@ async def generate_text(model_name: str, prompt: str, image_data: bytes = None, 
 async def generate_audio(model_name: str, prompt: str, voice: str = "alloy") -> bytes:
     """Генерирует аудио из текста с использованием выбранной модели и голоса."""
     try:
+        # Добавляем явное указание на озвучивание текста в промпте
+        audio_prompt = f"Please convert the following text to speech: {prompt}"
+
         payload = {
             "model": model_name,
             "modalities": ["text", "audio"],
             "audio": { "voice": voice, "format": "mp3" }, # Указываем формат mp3 для удобства
             "messages": [
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": audio_prompt} # Используем модифицированный промпт
             ]
         }
 
@@ -123,8 +126,17 @@ async def generate_audio(model_name: str, prompt: str, voice: str = "alloy") -> 
                     if audio_data_base64:
                         # Декодируем base64 в байты
                         return base64.b64decode(audio_data_base64)
-                    return None
-                return None # f"Ошибка при генерации аудио. Статус: {response.status}"
+
+                    # Если аудио данные не получены, но есть текстовый ответ, возможно, это ошибка API или модель не смогла сгенерировать аудио
+                    content = result.get("choices", [{}])[0].get("message", {}).get("content")
+                    if content:
+                         logging.warning(f"Получен текстовый ответ вместо аудио для запроса: {prompt}. Ответ: {content[:100]}...")
+                         # В этом случае возвращаем None, чтобы обработчик показал ошибку
+                         return None
+
+                    return None # f"Ошибка при генерации аудио. Статус: {response.status}"
+                logging.error(f"Ошибка API при генерации аудио. Статус: {response.status}")
+                return None
     except Exception as e:
         logging.error(f"Ошибка при генерации аудио: {str(e)}")
         return None

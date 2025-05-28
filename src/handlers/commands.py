@@ -18,7 +18,9 @@ from src.handlers.ai.generation import (
     back_to_menu_from_generation,
     redo_text_generation,
     start_audio_generation,
-    process_audio_prompt
+    process_audio_prompt,
+    start_echo_audio_generation,
+    start_response_audio_generation
 )
 from src.handlers.ai.history import router as history_router
 from src.managers.chat_manager import chat_manager
@@ -56,6 +58,8 @@ def register_all_handlers(dp: Dispatcher) -> None:
     dp.message.register(process_audio_prompt, UserState.waiting_for_audio_prompt)
     dp.message.register(process_image_prompt, UserState.waiting_for_image_prompt)
     dp.message.register(process_text_prompt, UserState.waiting_for_text_prompt)
+    dp.callback_query.register(start_echo_audio_generation, lambda c: c.data == "audio_gen_echo", UserState.waiting_for_audio_generation_type)
+    dp.callback_query.register(start_response_audio_generation, lambda c: c.data == "audio_gen_response", UserState.waiting_for_audio_generation_type)
     dp.callback_query.register(cancel_action, lambda c: c.data == "cancel")
     dp.callback_query.register(back_to_menu_from_generation, lambda c: c.data == "back_to_menu_from_gen")
     dp.callback_query.register(redo_text_generation, lambda c: c.data == "redo_text_generation")

@@ -69,6 +69,7 @@ def get_generation_type_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton(text="🎨 Изображения", callback_data="select_image_models"),
+            
         ],
         [
             InlineKeyboardButton(text="📝 Текст", callback_data="select_text_models")
@@ -105,5 +106,18 @@ def get_generation_response_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🔄 Переделать ответ", callback_data="redo_text_generation"),
             InlineKeyboardButton(text="⬅️ В меню", callback_data="back_to_menu_from_gen")
         ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_audio_generation_options_keyboard() -> InlineKeyboardMarkup:
+    """Создание клавиатуры для выбора типа генерации аудио."""
+    keyboard = [
+        [
+            InlineKeyboardButton(text="Генерация аудио ответа", callback_data="audio_gen_response")
+        ],
+        [
+            InlineKeyboardButton(text="Генерация аудио из текста", callback_data="audio_gen_echo")
+        ],
+        [InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard) 
