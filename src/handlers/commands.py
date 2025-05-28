@@ -20,7 +20,10 @@ from src.handlers.ai.generation import (
     start_audio_generation,
     process_audio_prompt,
     start_echo_audio_generation,
-    start_response_audio_generation
+    start_response_audio_generation,
+    choose_voice,
+    voice_selected,
+    redo_audio_generation
 )
 from src.handlers.ai.history import router as history_router
 from src.managers.chat_manager import chat_manager
@@ -51,6 +54,10 @@ def register_all_handlers(dp: Dispatcher) -> None:
     dp.callback_query.register(audio_model_selected, lambda c: c.data.startswith("audio_model_"))
     dp.callback_query.register(update_models_callback, lambda c: c.data == "update_models")
     
+    # Регистрация обработчиков для выбора голоса
+    dp.callback_query.register(choose_voice, lambda c: c.data == "choose_voice")
+    dp.callback_query.register(voice_selected, lambda c: c.data.startswith("voice:"))
+    
     # Регистрация обработчиков для генерации контента
     dp.callback_query.register(start_audio_generation, lambda c: c.data == "generate_audio")
     dp.callback_query.register(start_image_generation, lambda c: c.data == "generate_image")
@@ -63,6 +70,7 @@ def register_all_handlers(dp: Dispatcher) -> None:
     dp.callback_query.register(cancel_action, lambda c: c.data == "cancel")
     dp.callback_query.register(back_to_menu_from_generation, lambda c: c.data == "back_to_menu_from_gen")
     dp.callback_query.register(redo_text_generation, lambda c: c.data == "redo_text_generation")
+    dp.callback_query.register(redo_audio_generation, lambda c: c.data == "redo_audio_generation")
 
     # Регистрация обработчиков для работы с историей чата
     dp.include_router(history_router)

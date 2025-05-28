@@ -1,5 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from config.config import AVAILABLE_MODELS
+from config.config import AVAILABLE_MODELS, AVAILABLE_VOICES
 
 def get_main_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
@@ -12,13 +12,14 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="🤖 Выбор модели", callback_data="choose_model"),
-            InlineKeyboardButton(text="🔄 Обновить модели", callback_data="update_models")
+            InlineKeyboardButton(text="🎤 Выбор голоса", callback_data="choose_voice"),
         ],
         [
             InlineKeyboardButton(text="📜 История чата", callback_data="show_history"),
-            InlineKeyboardButton(text="❓ Помощь", callback_data="help")
+            InlineKeyboardButton(text="🔄 Обновить модели", callback_data="update_models"),
         ],
         [
+            InlineKeyboardButton(text="❓ Помощь", callback_data="help"),
             InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")
         ]
     ]
@@ -120,4 +121,18 @@ def get_audio_generation_options_keyboard() -> InlineKeyboardMarkup:
         ],
         [InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_menu")]
     ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_voice_selection_keyboard() -> InlineKeyboardMarkup:
+    """Создает клавиатуру для выбора голоса."""
+    keyboard = []
+    for voice_name in AVAILABLE_VOICES.keys():
+        keyboard.append([InlineKeyboardButton(
+            text=voice_name,
+            callback_data=f"voice:{voice_name}"
+        )])
+    keyboard.append([InlineKeyboardButton(
+        text="⬅️ Назад",
+        callback_data="back_to_menu"
+    )])
     return InlineKeyboardMarkup(inline_keyboard=keyboard) 

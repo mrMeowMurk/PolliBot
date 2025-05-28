@@ -12,7 +12,7 @@ class DatabaseManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, db_file: str = "data/bot_data.db"):
+    def __init__(self, db_file: str = "bot.db"):
         # Инициализируем только один раз
         if not DatabaseManager._initialized:
             # Создаем директорию data, если она не существует
@@ -32,9 +32,11 @@ class DatabaseManager:
                     user_id INTEGER PRIMARY KEY,
                     images_generated INTEGER DEFAULT 0,
                     texts_generated INTEGER DEFAULT 0,
+                    audio_generated INTEGER DEFAULT 0,
                     last_used TIMESTAMP,
                     current_model TEXT,
-                    model_type TEXT
+                    model_type TEXT,
+                    current_voice TEXT
                 )
             """)
             
@@ -143,7 +145,7 @@ class DatabaseManager:
             
             return messages
 
-    def get_user_stats(self, user_id: int) -> dict:
+    def get_user_stats(self, user_id: int) -> Dict[str, Any]:
         """Получение статистики пользователя."""
         with sqlite3.connect(self.db_file) as conn:
             cursor = conn.cursor()
@@ -155,18 +157,21 @@ class DatabaseManager:
             if not user:
                 # Создаем нового пользователя
                 cursor.execute(
-                    "INSERT INTO users (user_id, images_generated, texts_generated) VALUES (?, 0, 0)",
+                    "INSERT INTO users (user_id, images_generated, texts_generated, audio_generated) VALUES (?, 0, 0, 0)",
                     (user_id,)
                 )
                 conn.commit()
                 return {
                     "images_generated": 0,
                     "texts_generated": 0,
+                    "audio_generated": 0,
                     "last_used": None,
                     "current_model": None,
                     "model_type": None,
+                    "current_voice": None,
                     "text_models": None,
-                    "image_models": None
+                    "image_models": None,
+                    "audio_models": None
                 }
             
             # Получаем модели пользователя
@@ -179,11 +184,14 @@ class DatabaseManager:
             return {
                 "images_generated": user[1],
                 "texts_generated": user[2],
-                "last_used": user[3],
-                "current_model": user[4],
-                "model_type": user[5],
+                "audio_generated": user[3],
+                "last_used": user[4],
+                "current_model": user[5],
+                "model_type": user[6],
+                "current_voice": user[7],
                 "text_models": models.get("text"),
-                "image_models": models.get("image")
+                "image_models": models.get("image"),
+                "audio_models": models.get("audio")
             }
 
     def update_user_stats(self, user_id: int, stats: Dict[str, Any]) -> None:
@@ -196,33 +204,43 @@ class DatabaseManager:
                 UPDATE users 
                 SET images_generated = ?,
                     texts_generated = ?,
+                    audio_generated = ?,
                     last_used = ?,
                     current_model = ?,
-                    model_type = ?
+                    model_type = ?,
+                    current_voice = ?
                 WHERE user_id = ?
             """, (
-                stats["images_generated"],
-                stats["texts_generated"],
+                stats.get("images_generated", 0),
+                stats.get("texts_generated", 0),
+                stats.get("audio_generated", 0),
                 stats.get("last_used"),
                 stats.get("current_model"),
                 stats.get("model_type"),
+                stats.get("current_voice"),
                 user_id
             ))
             
             # Обновляем модели пользователя
-            if stats.get("text_models"):
-                self._update_user_models(cursor, user_id, "text", stats["text_models"])
-            if stats.get("image_models"):
-                self._update_user_models(cursor, user_id, "image", stats["image_models"])
+            if "text_models" in stats:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO user_models (user_id, model_type, models)
+                    VALUES (?, 'text', ?)
+                """, (user_id, str(stats["text_models"])))
+            
+            if "image_models" in stats:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO user_models (user_id, model_type, models)
+                    VALUES (?, 'image', ?)
+                """, (user_id, str(stats["image_models"])))
+            
+            if "audio_models" in stats:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO user_models (user_id, model_type, models)
+                    VALUES (?, 'audio', ?)
+                """, (user_id, str(stats["audio_models"])))
             
             conn.commit()
-
-    def _update_user_models(self, cursor: sqlite3.Cursor, user_id: int, model_type: str, models: List[str]) -> None:
-        """Обновление моделей пользователя."""
-        cursor.execute("""
-            INSERT OR REPLACE INTO user_models (user_id, model_type, models)
-            VALUES (?, ?, ?)
-        """, (user_id, model_type, str(models)))
 
     @classmethod
     def get_instance(cls, db_file: str = "data/bot_data.db") -> 'DatabaseManager':

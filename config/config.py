@@ -20,6 +20,16 @@ AVAILABLE_MODELS = {
     "OpenAI Audio": "openai-audio"
 }
 
+# Доступные голоса для генерации аудио
+AVAILABLE_VOICES = {
+    "Alloy": "alloy",
+    "Echo": "echo",
+    "Fable": "fable",
+    "Onyx": "onyx",
+    "Nova": "nova",
+    "Shimmer": "shimmer"
+}
+
 # Текст для команд
 HELP_TEXT = """
 <b>🤖 Доступные команды:</b>

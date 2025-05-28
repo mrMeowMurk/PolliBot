@@ -111,13 +111,14 @@ async def text_model_selected(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     model_name = callback.data.replace("text_model_", "")
     stats = get_user_stats(user_id)
+    
+    # Сохраняем выбранную модель и её тип
     stats["current_model"] = model_name
     stats["model_type"] = "text"
     update_user_stats(user_id, stats)
     
     await safe_edit_message(
         callback.message,
-        f"✅ Выбрана модель для текста: {model_name}\n\n" + 
         get_menu_text(user_id),
         reply_markup=get_main_keyboard()
     )
@@ -127,13 +128,14 @@ async def image_model_selected(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     model_name = callback.data.replace("image_model_", "")
     stats = get_user_stats(user_id)
+    
+    # Сохраняем выбранную модель и её тип
     stats["current_model"] = model_name
     stats["model_type"] = "image"
     update_user_stats(user_id, stats)
     
     await safe_edit_message(
         callback.message,
-        f"✅ Выбрана модель для изображений: {model_name}\n\n" + 
         get_menu_text(user_id),
         reply_markup=get_main_keyboard()
     )
@@ -143,13 +145,14 @@ async def audio_model_selected(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     model_name = callback.data.replace("audio_model_", "")
     stats = get_user_stats(user_id)
+    
+    # Сохраняем выбранную модель и её тип
     stats["current_model"] = model_name
     stats["model_type"] = "audio"
     update_user_stats(user_id, stats)
     
     await safe_edit_message(
         callback.message,
-        f"✅ Выбрана модель для аудио: {model_name}\n\n" +
         get_menu_text(user_id),
         reply_markup=get_main_keyboard()
     )
