@@ -1,11 +1,13 @@
 from datetime import datetime
 from aiogram import types, Bot
 from aiogram.fsm.context import FSMContext
+from io import BytesIO
+from aiogram.types import BufferedInputFile
 
 from src.keyboards.keyboards import get_main_keyboard, get_cancel_keyboard, get_generation_response_keyboard
 from src.utils.message import safe_edit_message
 from src.utils.user_data import get_user_stats, get_menu_text, update_user_stats
-from src.utils.pollinations import generate_text, generate_image
+from src.utils.pollinations import generate_text, generate_image, generate_audio
 from src.states.user import UserState
 
 async def start_image_generation(callback: types.CallbackQuery, state: FSMContext):
@@ -66,6 +68,36 @@ async def start_text_generation(callback: types.CallbackQuery, state: FSMContext
         reply_markup=get_cancel_keyboard()
     )
     await state.set_state(UserState.waiting_for_text_prompt)
+    await callback.answer()
+
+async def start_audio_generation(callback: types.CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    stats = get_user_stats(user_id)
+    
+    if not stats.get("current_model"):
+        await safe_edit_message(
+            callback.message,
+            "❗ Сначала выберите модель через кнопку '🤖 Выбор модели'",
+            reply_markup=get_main_keyboard()
+        )
+        await callback.answer()
+        return
+    
+    if stats.get("model_type") != "audio":
+        await safe_edit_message(
+            callback.message,
+            "❗ Выбранная модель не поддерживает генерацию аудио",
+            reply_markup=get_main_keyboard()
+        )
+        await callback.answer()
+        return
+    
+    await safe_edit_message(
+        callback.message,
+        "Введите текст, который хотите преобразовать в аудио:",
+        reply_markup=get_cancel_keyboard()
+    )
+    await state.set_state(UserState.waiting_for_audio_prompt)
     await callback.answer()
 
 async def process_image_prompt(message: types.Message, state: FSMContext, bot: Bot):
@@ -149,6 +181,44 @@ async def process_text_prompt(message: types.Message, state: FSMContext, bot: Bo
             reply_markup=get_main_keyboard()
         )
         await state.clear() # Сбрасываем состояние при ошибке
+
+async def process_audio_prompt(message: types.Message, state: FSMContext, bot: Bot):
+    user_id = message.from_user.id
+    stats = get_user_stats(user_id)
+    model = stats["current_model"]
+    prompt_text = message.text
+
+    if not prompt_text:
+        await message.answer(
+            "❗ Пожалуйста, введите текст для озвучивания",
+            reply_markup=get_cancel_keyboard()
+        )
+        return
+
+    status_message = await message.answer("🎵 Генерирую аудио, пожалуйста подождите...")
+
+    audio_data = await generate_audio(model, prompt_text) # Передаем только текст
+
+    if audio_data:
+        # Увеличиваем счетчик сгенерированного аудио в статистике
+        stats["audio_generated"] = stats.get("audio_generated", 0) + 1
+        stats["last_used"] = datetime.now()
+        update_user_stats(user_id, stats)
+
+        # Создаем BytesIO объект из байтов аудиоданных
+        audio_io = BytesIO(audio_data)
+        audio_io.name = "generated_audio.mp3" # Указываем имя файла
+
+        await message.answer_audio(audio=BufferedInputFile(audio_io.read(), filename=audio_io.name))
+        await message.answer(get_menu_text(user_id), reply_markup=get_main_keyboard())
+    else:
+        await message.answer(
+            "❌ Произошла ошибка при генерации аудио. Попробуйте еще раз.",
+            reply_markup=get_main_keyboard()
+        )
+
+    await status_message.delete()
+    await state.clear()
 
 async def cancel_action(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()

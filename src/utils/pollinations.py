@@ -22,7 +22,10 @@ async def fetch_all_models():
     """Получает списки всех доступных моделей."""
     text_models = await fetch_models(TEXT_MODELS_URL)
     image_models = await fetch_models(IMAGE_MODELS_URL)
-    return text_models, image_models
+    audio_models = await fetch_models(TEXT_MODELS_URL) # Аудио модели тоже доступны через TEXT_MODELS_URL
+    if audio_models:
+        audio_models = [model for model in audio_models if model.get("name") == "openai-audio"]
+    return text_models, image_models, audio_models
 
 async def encode_image_to_base64(image_bytes: bytes) -> tuple:
     """Кодирует изображение в base64 строку и определяет MIME-тип."""
@@ -98,6 +101,33 @@ async def generate_text(model_name: str, prompt: str, image_data: bytes = None, 
     except Exception as e:
         logging.error(f"Ошибка при генерации текста: {str(e)}")
         return f"Произошла ошибка при обработке запроса: {str(e)}"
+
+async def generate_audio(model_name: str, prompt: str, voice: str = "alloy") -> bytes:
+    """Генерирует аудио из текста с использованием выбранной модели и голоса."""
+    try:
+        payload = {
+            "model": model_name,
+            "modalities": ["text", "audio"],
+            "audio": { "voice": voice, "format": "mp3" }, # Указываем формат mp3 для удобства
+            "messages": [
+                {"role": "user", "content": prompt}
+            ]
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(TEXT_GENERATION_OPENAI_URL, json=payload) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    # Извлекаем base64 аудиоданные
+                    audio_data_base64 = result.get("choices", [{}])[0].get("message", {}).get("audio", {}).get("data")
+                    if audio_data_base64:
+                        # Декодируем base64 в байты
+                        return base64.b64decode(audio_data_base64)
+                    return None
+                return None # f"Ошибка при генерации аудио. Статус: {response.status}"
+    except Exception as e:
+        logging.error(f"Ошибка при генерации аудио: {str(e)}")
+        return None
 
 async def generate_image(model_name: str, prompt: str) -> str:
     """Генерирует изображение с использованием выбранной модели."""

@@ -8,6 +8,9 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📝 Генерация текста", callback_data="generate_text")
         ],
         [
+            InlineKeyboardButton(text="🎵 Генерация аудио", callback_data="generate_audio")
+        ],
+        [
             InlineKeyboardButton(text="🤖 Выбор модели", callback_data="choose_model"),
             InlineKeyboardButton(text="🔄 Обновить модели", callback_data="update_models")
         ],
@@ -33,6 +36,16 @@ def get_models_keyboard(models_data: list, model_type: str = "image") -> InlineK
                     callback_data=f"text_model_{name}"
                 )
             ])
+    elif model_type == "audio":
+        for model in models_data:
+            name = model.get("name", "N/A")
+            description = model.get("description", "Нет описания")
+            keyboard.append([
+                InlineKeyboardButton(
+                    text=f"{name} - {description}",
+                    callback_data=f"audio_model_{name}"
+                )
+            ])
     else:  # image models
         for model_name in models_data:
             keyboard.append([
@@ -56,7 +69,12 @@ def get_generation_type_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton(text="🎨 Изображения", callback_data="select_image_models"),
+        ],
+        [
             InlineKeyboardButton(text="📝 Текст", callback_data="select_text_models")
+        ],
+        [
+            InlineKeyboardButton(text="🎵 Аудио", callback_data="select_audio_models")
         ],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_menu")]
     ]

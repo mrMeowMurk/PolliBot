@@ -16,7 +16,8 @@ AVAILABLE_MODELS = {
     "Stable Diffusion XL": "sd_xl",
     "Stable Diffusion 1.5": "sd_1_5",
     "Kandinsky": "kandinsky",
-    "DALL-E": "dalle"
+    "DALL-E": "dalle",
+    "OpenAI Audio": "openai-audio"
 }
 
 # Текст для команд
