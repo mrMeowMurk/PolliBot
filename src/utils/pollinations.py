@@ -52,25 +52,33 @@ async def generate_text(model_name: str, prompt: str, image_data: bytes = None, 
         if image_data:
             image_base64, mime_type = await encode_image_to_base64(image_data)
             if image_base64 and mime_type:
+                # Формируем специальный промпт для Pollinations API с изображением
+                image_prompt = f"Analyze this image and answer the following question: {prompt}"
                 messages.append({
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": prompt},
+                        {"type": "text", "text": image_prompt},
                         {
                             "type": "image_url",
-                            "image_url": {"url": f"data:{mime_type};base64,{image_base64}"}
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{image_base64}",
+                                "detail": "high"  # Запрашиваем высокое качество анализа изображения
+                            }
                         }
                     ]
                 })
             else:
-                # Если не удалось закодировать изображение, продолжаем только с текстом
                 messages.append({"role": "user", "content": prompt})
         else:
             messages.append({"role": "user", "content": prompt})
 
         payload = {
             "model": model_name,
-            "messages": messages
+            "messages": messages,
+            "max_tokens": 1000,  # Увеличиваем лимит токенов для более подробных ответов
+            "temperature": 0.7,  # Добавляем немного креативности в ответы
+            "presence_penalty": 0.6,  # Поощряем разнообразие в ответах
+            "frequency_penalty": 0.3  # Уменьшаем повторения
         }
 
         async with aiohttp.ClientSession() as session:

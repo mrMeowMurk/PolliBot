@@ -99,28 +99,51 @@ async def process_text_prompt(message: types.Message, state: FSMContext, bot: Bo
     user_id = message.from_user.id
     stats = get_user_stats(user_id)
     model = stats["current_model"]
-    
-    image_data = None
+
+    # Проверяем наличие изображения и получаем текст
+    image_data_bytes = None
+    prompt_text = message.text
+
     if message.photo:
-        photo = message.photo[-1]
-        image_data = await bot.download(photo.file_id)
-    
-    status_message = await message.answer("📝 Генерирую текст, пожалуйста подождите...")
-    
-    response = await generate_text(model, message.text, image_data, user_id)
+        photo = message.photo[-1]  # Берем самое большое изображение
+        image_data_io = await bot.download(photo.file_id)
+        # Читаем байты из BytesIO объекта
+        image_data_bytes = image_data_io.read()
+        # При наличии фото, текст находится в подписи (caption)
+        prompt_text = message.caption
+
+    # Проверяем наличие текста или подписи
+    if not prompt_text:
+        await message.answer(
+            "❗ Пожалуйста, введите текстовый запрос или добавьте подпись к изображению",
+            reply_markup=get_cancel_keyboard()
+        )
+        return
+
+    status_message = await message.answer(
+        "📝 Генерирую ответ, пожалуйста подождите..." +
+        ("\n🖼 Анализирую изображение..." if image_data_bytes else "")
+    )
+
+    # Передаем изображение в байтах и текст в функцию генерации
+    response = await generate_text(model, prompt_text, image_data_bytes, user_id)
     if response:
         stats["texts_generated"] += 1
         stats["last_used"] = datetime.now()
         update_user_stats(user_id, stats)
-        
-        await message.answer(response)
+
+        # Отправляем ответ с форматированием
+        await message.answer(
+            f"✨ Ответ модели:\n\n{response}",
+            parse_mode="HTML"
+        )
         await message.answer(get_menu_text(user_id), reply_markup=get_main_keyboard())
     else:
         await message.answer(
             "❌ Произошла ошибка при генерации текста. Попробуйте еще раз.",
             reply_markup=get_main_keyboard()
         )
-    
+
     await status_message.delete()
     await state.clear()
 
