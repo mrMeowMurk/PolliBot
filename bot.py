@@ -2,6 +2,7 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.default import DefaultBotProperties
 
 from config.config import BOT_TOKEN
 from src.handlers.commands import register_all_handlers
@@ -10,7 +11,10 @@ from src.handlers.commands import register_all_handlers
 logging.basicConfig(level=logging.INFO)
 
 # Инициализация бота и диспетчера
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(
+    token=BOT_TOKEN, 
+    default=DefaultBotProperties(parse_mode='HTML')
+)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 

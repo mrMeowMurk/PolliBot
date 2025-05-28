@@ -137,7 +137,7 @@ async def process_text_prompt(message: types.Message, state: FSMContext, bot: Bo
 
         # Отправляем ответ с форматированием
         await status_message.edit_text(
-            f"✨ Ответ модели:\n\n{response}",
+            f"✨ Ответ от модели <b>{model}</b>:\n\n{response}",
             parse_mode="HTML",
             reply_markup=get_generation_response_keyboard()
         )
@@ -199,7 +199,7 @@ async def redo_text_generation(callback: types.CallbackQuery, state: FSMContext,
         update_user_stats(user_id, stats)
 
         await status_message.edit_text(
-            f"✨ Ответ модели:\n\n{response}",
+            f"✨ Ответ от модели <b>{model}</b>:\n\n{response}",
             parse_mode="HTML",
             reply_markup=get_generation_response_keyboard()
         )
