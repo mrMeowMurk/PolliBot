@@ -214,8 +214,44 @@ async def process_audio_prompt(message: types.Message, state: FSMContext, bot: B
 
     status_message = await message.answer("🎵 Генерирую аудио, пожалуйста подождите...")
     
-    # Генерируем аудио напрямую
-    audio_data = await generate_audio("openai-audio", prompt_text, voice=voice_id)
+    if audio_gen_type == "response":
+        # Для типа "response" сначала генерируем текстовый ответ
+        if not stats.get("current_model"):
+            await status_message.edit_text(
+                "❗ Сначала выберите текстовую модель через кнопку '🤖 Выбор модели' -> '📝 Текст'",
+                reply_markup=get_main_keyboard()
+            )
+            await state.clear()
+            return
+
+        if stats.get("model_type") != "text":
+            await status_message.edit_text(
+                "❗ Выбранная модель не поддерживает генерацию текста. Выберите модель для текста через '🤖 Выбор модели' -> '📝 Текст'",
+                reply_markup=get_main_keyboard()
+            )
+            await state.clear()
+            return
+
+        # Генерируем текстовый ответ
+        response = await generate_text(stats["current_model"], prompt_text, None, user_id)
+        if not response:
+            await status_message.edit_text(
+                "❌ Произошла ошибка при генерации текста. Попробуйте еще раз.",
+                reply_markup=get_main_keyboard()
+            )
+            await state.clear()
+            return
+
+        # Используем сгенерированный текст для озвучивания
+        text_to_speak = response
+        caption = f"🎵 Сгенерированное аудио\n\nТип генерации: {audio_gen_type}\nГолос: {selected_voice}\n\nТекстовый ответ:\n{response}"
+    else:
+        # Для типа "echo" просто озвучиваем введенный текст
+        text_to_speak = prompt_text
+        caption = f"🎵 Сгенерированное аудио\n\nТип генерации: {audio_gen_type}\nГолос: {selected_voice}"
+
+    # Генерируем аудио
+    audio_data = await generate_audio("openai-audio", text_to_speak, voice=voice_id)
 
     if audio_data:
         stats["audio_generated"] = stats.get("audio_generated", 0) + 1
@@ -229,7 +265,7 @@ async def process_audio_prompt(message: types.Message, state: FSMContext, bot: B
         # Отправляем аудио без кнопок
         await message.answer_audio(
             audio=BufferedInputFile(audio_io.read(), filename=audio_io.name),
-            caption=f"🎵 Сгенерированное аудио\n\nТип генерации: {audio_gen_type}\nГолос: {selected_voice}"
+            caption=caption
         )
         # Отправляем меню отдельным сообщением
         await message.answer(
