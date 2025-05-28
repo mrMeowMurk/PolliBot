@@ -12,7 +12,9 @@ from src.handlers.ai.models import (
 from src.handlers.ai.generation import (
     start_image_generation, start_text_generation,
     process_image_prompt, process_text_prompt,
-    cancel_action
+    cancel_action,
+    back_to_menu_from_generation,
+    redo_text_generation
 )
 from src.handlers.ai.history import router as history_router
 from src.managers.chat_manager import chat_manager
@@ -47,6 +49,8 @@ def register_all_handlers(dp: Dispatcher) -> None:
     dp.message.register(process_image_prompt, UserState.waiting_for_image_prompt)
     dp.message.register(process_text_prompt, UserState.waiting_for_text_prompt)
     dp.callback_query.register(cancel_action, lambda c: c.data == "cancel")
+    dp.callback_query.register(back_to_menu_from_generation, lambda c: c.data == "back_to_menu_from_gen")
+    dp.callback_query.register(redo_text_generation, lambda c: c.data == "redo_text_generation")
 
     # Регистрация обработчиков для работы с историей чата
     dp.include_router(history_router)

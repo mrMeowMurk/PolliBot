@@ -2,7 +2,7 @@ from datetime import datetime
 from aiogram import types, Bot
 from aiogram.fsm.context import FSMContext
 
-from src.keyboards.keyboards import get_main_keyboard, get_cancel_keyboard
+from src.keyboards.keyboards import get_main_keyboard, get_cancel_keyboard, get_generation_response_keyboard
 from src.utils.message import safe_edit_message
 from src.utils.user_data import get_user_stats, get_menu_text, update_user_stats
 from src.utils.pollinations import generate_text, generate_image
@@ -120,6 +120,9 @@ async def process_text_prompt(message: types.Message, state: FSMContext, bot: Bo
         )
         return
 
+    # Сохраняем последний запрос пользователя и данные изображения в состояние FSM
+    await state.update_data(last_prompt_text=prompt_text, last_image_data=image_data_bytes)
+
     status_message = await message.answer(
         "📝 Генерирую ответ, пожалуйста подождите..." +
         ("\n🖼 Анализирую изображение..." if image_data_bytes else "")
@@ -133,19 +136,19 @@ async def process_text_prompt(message: types.Message, state: FSMContext, bot: Bo
         update_user_stats(user_id, stats)
 
         # Отправляем ответ с форматированием
-        await message.answer(
+        await status_message.edit_text(
             f"✨ Ответ модели:\n\n{response}",
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=get_generation_response_keyboard()
         )
-        await message.answer(get_menu_text(user_id), reply_markup=get_main_keyboard())
+        # Не сбрасываем состояние, остаемся в ожидании текста
+
     else:
-        await message.answer(
+        await status_message.edit_text(
             "❌ Произошла ошибка при генерации текста. Попробуйте еще раз.",
             reply_markup=get_main_keyboard()
         )
-
-    await status_message.delete()
-    await state.clear()
+        await state.clear() # Сбрасываем состояние при ошибке
 
 async def cancel_action(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
@@ -154,4 +157,59 @@ async def cancel_action(callback: types.CallbackQuery, state: FSMContext):
         "❌ Действие отменено\n" + get_menu_text(callback.from_user.id),
         reply_markup=get_main_keyboard()
     )
+    await callback.answer()
+
+async def back_to_menu_from_generation(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text(
+        get_menu_text(callback.from_user.id),
+        reply_markup=get_main_keyboard()
+    )
+    await callback.answer()
+
+async def redo_text_generation(callback: types.CallbackQuery, state: FSMContext, bot: Bot):
+    user_id = callback.from_user.id
+    stats = get_user_stats(user_id)
+    model = stats["current_model"]
+
+    data = await state.get_data()
+    last_prompt_text = data.get("last_prompt_text")
+    last_image_data_bytes = data.get("last_image_data")
+
+    if not last_prompt_text and not last_image_data_bytes:
+        await callback.message.edit_text(
+            "Нет предыдущего запроса для повторной генерации.",
+            reply_markup=get_main_keyboard()
+        )
+        await state.clear()
+        await callback.answer()
+        return
+
+    status_message = await callback.message.edit_text(
+        "🔄 Переделываю ответ..." +
+        ("\n🖼 Анализирую изображение..." if last_image_data_bytes else "")
+    )
+
+    # Передаем сохраненные данные изображения и текст в функцию генерации
+    response = await generate_text(model, last_prompt_text, last_image_data_bytes, user_id)
+
+    if response:
+        stats["texts_generated"] += 1 # Учитываем повторную генерацию в статистике
+        stats["last_used"] = datetime.now()
+        update_user_stats(user_id, stats)
+
+        await status_message.edit_text(
+            f"✨ Ответ модели:\n\n{response}",
+            parse_mode="HTML",
+            reply_markup=get_generation_response_keyboard()
+        )
+        # Остаемся в состоянии ожидания текста
+
+    else:
+        await status_message.edit_text(
+            "❌ Произошла ошибка при повторной генерации текста. Попробуйте еще раз.",
+            reply_markup=get_main_keyboard()
+        )
+        await state.clear() # Сбрасываем состояние при ошибке
+
     await callback.answer()

@@ -78,4 +78,14 @@ def get_chat_history_keyboard() -> InlineKeyboardMarkup:
             )
         ]
     ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_generation_response_keyboard() -> InlineKeyboardMarkup:
+    """Создание клавиатуры после получения ответа от модели."""
+    keyboard = [
+        [
+            InlineKeyboardButton(text="🔄 Переделать ответ", callback_data="redo_text_generation"),
+            InlineKeyboardButton(text="⬅️ В меню", callback_data="back_to_menu_from_gen")
+        ]
+    ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard) 
