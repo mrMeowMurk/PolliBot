@@ -12,3 +12,22 @@ __pycache__/
 *.key
 
 .data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Database
+data/*.db
+data/bot_data.db
+
+# Logs
+*.log

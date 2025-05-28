@@ -23,7 +23,7 @@ PolliBot - это мощный Telegram бот для взаимодействи
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/yourusername/nexusai-bot.git
+git clone https://github.com/mrMeowMurk/PolliBot.git
 cd nexusai-bot
 ```
 
