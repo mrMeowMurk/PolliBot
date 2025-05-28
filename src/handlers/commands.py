@@ -14,6 +14,9 @@ from src.handlers.ai.generation import (
     process_image_prompt, process_text_prompt,
     cancel_action
 )
+from src.handlers.ai.history import router as history_router
+from src.managers.chat_manager import chat_manager
+from src.keyboards.keyboards import get_main_keyboard, get_chat_history_keyboard
 from src.states.user import UserState
 
 def register_all_handlers(dp: Dispatcher) -> None:
@@ -44,3 +47,6 @@ def register_all_handlers(dp: Dispatcher) -> None:
     dp.message.register(process_image_prompt, UserState.waiting_for_image_prompt)
     dp.message.register(process_text_prompt, UserState.waiting_for_text_prompt)
     dp.callback_query.register(cancel_action, lambda c: c.data == "cancel")
+
+    # Регистрация обработчиков для работы с историей чата
+    dp.include_router(history_router)

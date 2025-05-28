@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict, List, Any, Tuple
 
 class DatabaseManager:
@@ -48,8 +48,100 @@ class DatabaseManager:
                     PRIMARY KEY (user_id, model_type)
                 )
             """)
+
+            # Таблица для хранения истории чата
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS chat_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    message TEXT,
+                    role TEXT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (user_id)
+                )
+            """)
             
             conn.commit()
+
+    def add_chat_message(self, user_id: int, message: str, role: str = "user") -> None:
+        """Добавление сообщения в историю чата."""
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO chat_history (user_id, message, role)
+                VALUES (?, ?, ?)
+            """, (user_id, message, role))
+            conn.commit()
+
+    def get_chat_history(self, user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
+        """Получение истории чата пользователя."""
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT message, role, timestamp
+                FROM chat_history
+                WHERE user_id = ?
+                ORDER BY timestamp DESC
+                LIMIT ?
+            """, (user_id, limit))
+            
+            return [
+                {
+                    "message": row[0],
+                    "role": row[1],
+                    "timestamp": row[2]
+                }
+                for row in cursor.fetchall()
+            ]
+
+    def clear_old_messages(self, days: int = 7) -> None:
+        """Очистка старых сообщений из истории чата."""
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            cutoff_date = datetime.now() - timedelta(days=days)
+            cursor.execute("""
+                DELETE FROM chat_history
+                WHERE timestamp < ?
+            """, (cutoff_date,))
+            conn.commit()
+
+    def clear_user_history(self, user_id: int) -> None:
+        """Очистка всей истории чата для конкретного пользователя."""
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                DELETE FROM chat_history
+                WHERE user_id = ?
+            """, (user_id,))
+            conn.commit()
+
+    def get_chat_context(self, user_id: int, max_tokens: int = 2000) -> List[Dict[str, str]]:
+        """Получение контекста чата с учетом ограничения токенов."""
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT message, role
+                FROM chat_history
+                WHERE user_id = ?
+                ORDER BY timestamp DESC
+            """, (user_id,))
+            
+            messages = []
+            total_tokens = 0
+            
+            for row in cursor.fetchall():
+                message = row[0]
+                role = row[1]
+                # Примерная оценка токенов (4 символа ~ 1 токен)
+                message_tokens = len(message) // 4
+                
+                if total_tokens + message_tokens > max_tokens:
+                    break
+                    
+                messages.insert(0, {"role": role, "content": message})
+                total_tokens += message_tokens
+            
+            return messages
 
     def get_user_stats(self, user_id: int) -> dict:
         """Получение статистики пользователя."""

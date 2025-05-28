@@ -107,7 +107,7 @@ async def process_text_prompt(message: types.Message, state: FSMContext, bot: Bo
     
     status_message = await message.answer("📝 Генерирую текст, пожалуйста подождите...")
     
-    response = await generate_text(model, message.text, image_data)
+    response = await generate_text(model, message.text, image_data, user_id)
     if response:
         stats["texts_generated"] += 1
         stats["last_used"] = datetime.now()

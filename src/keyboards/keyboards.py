@@ -12,7 +12,10 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🔄 Обновить модели", callback_data="update_models")
         ],
         [
-            InlineKeyboardButton(text="❓ Помощь", callback_data="help"),
+            InlineKeyboardButton(text="📜 История чата", callback_data="show_history"),
+            InlineKeyboardButton(text="❓ Помощь", callback_data="help")
+        ],
+        [
             InlineKeyboardButton(text="ℹ️ О боте", callback_data="about")
         ]
     ]
@@ -56,5 +59,23 @@ def get_generation_type_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📝 Текст", callback_data="select_text_models")
         ],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_menu")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_chat_history_keyboard() -> InlineKeyboardMarkup:
+    """Создание клавиатуры для управления историей чата."""
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text="🗑 Очистить историю",
+                callback_data="clear_history"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🔙 Назад в меню",
+                callback_data="back_to_menu"
+            )
+        ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard) 

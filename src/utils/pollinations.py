@@ -4,6 +4,7 @@ import mimetypes
 from urllib.parse import quote_plus
 from config.config import TEXT_MODELS_URL, IMAGE_MODELS_URL, TEXT_GENERATION_OPENAI_URL, IMAGE_GENERATION_BASE_URL
 import logging
+from src.managers.chat_manager import chat_manager
 
 async def fetch_models(url: str) -> list:
     """Асинхронно получает список моделей с указанного URL."""
@@ -38,10 +39,15 @@ async def encode_image_to_base64(image_bytes: bytes) -> tuple:
         print(f"Ошибка при кодировании изображения: {e}")
         return None, None
 
-async def generate_text(model_name: str, prompt: str, image_data: bytes = None) -> str:
+async def generate_text(model_name: str, prompt: str, image_data: bytes = None, user_id: int = None) -> str:
     """Генерирует текст с использованием выбранной модели."""
     try:
         messages = []
+        
+        # Получаем историю чата, если указан user_id
+        if user_id:
+            chat_history = await chat_manager.get_context(user_id)
+            messages.extend(chat_history)
         
         if image_data:
             image_base64, mime_type = await encode_image_to_base64(image_data)
@@ -74,6 +80,10 @@ async def generate_text(model_name: str, prompt: str, image_data: bytes = None) 
                     if result.get("choices") and len(result["choices"]) > 0:
                         content = result["choices"][0].get("message", {}).get("content")
                         if content:
+                            # Сохраняем ответ модели в историю чата
+                            if user_id:
+                                await chat_manager.add_message(user_id, prompt, role="user")
+                                await chat_manager.add_message(user_id, content, role="assistant")
                             return content
                         return "Модель вернула пустой ответ"
                 return f"Ошибка при генерации текста. Статус: {response.status}"
